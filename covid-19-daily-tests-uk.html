@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>COVID-19 UK daily tests</title>
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.10.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@4.7.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.3.2"></script>
+  </head>
+  <body>
+    <div id="p1"></div>
+    <p><a href="index.html">Home</a></p>
+    <script type="text/javascript">
+      const p1 = {
+        $schema: "https://vega.github.io/schema/vega-lite/v4.json",
+        title: "COVID-19 UK daily people tested with weekly rolling average",
+        description: "UK daily people tested",
+        width: 600,
+        height: 400,
+        data: {
+          url:
+            "https://raw.githubusercontent.com/tomwhite/covid-19-uk-data/master/data/covid-19-tests-uk.csv",
+        },
+        transform: [
+          {
+            window: [{ op: "lag", field: "TotalPeopleTested", as: "Prev" }],
+          },
+          {
+            calculate:
+              "if(datum.Prev == null, NaN, if(datum.TotalPeopleTested === '', NaN, datum.TotalPeopleTested) - datum.Prev)",
+            as: "DailyTestsDifference",
+          },
+          {
+            calculate:
+              "if(datum.DailyPeopleTested === '', datum.DailyTestsDifference, datum.DailyPeopleTested)",
+            as: "DailyTests",
+          },
+          {
+            frame: [-4, 3],
+            window: [
+              {
+                field: "DailyTests",
+                op: "mean",
+                as: "RollingDailyTests",
+              },
+            ],
+          },
+        ],
+        layer: [
+          {
+            mark: {
+              type: "bar",
+              tooltip: true,
+            },
+            encoding: {
+              x: { field: "Date", type: "temporal" },
+              y: {
+                title: "Daily people tested",
+                field: "DailyTests",
+                type: "quantitative",
+              },
+            },
+          },
+          {
+            mark: {
+              type: "line",
+              stroke: "orange",
+              strokeOpacity: 0.5,
+            },
+            encoding: {
+              x: { field: "Date", type: "temporal" },
+              y: { field: "RollingDailyTests", type: "quantitative" },
+            },
+          },
+        ],
+      };
+      vegaEmbed("#p1", p1);
+    </script>
+  </body>
+</html>
